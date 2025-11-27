@@ -1,7 +1,6 @@
 from django.db.models import Q
 
 from rest_framework import exceptions as drf_exceptions, viewsets
-from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models import *
@@ -103,12 +102,9 @@ class BookViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
 
 
-class LibraryCategoriesView(APIView):
-    """
-    Returns 5 categories (Bookshelves) and up to 5 top books for each.
-    Supports pagination over categories via `offset` query parameter.
-    """
-    def get(self, request):
+class LibraryCategoriesViewSet(viewsets.ViewSet):
+    """List 5 categories (Bookshelves) each with up to 5 top books."""
+    def list(self, request):
         try:
             offset = int(request.GET.get('offset', '0'))
         except ValueError:
