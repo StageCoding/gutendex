@@ -102,8 +102,9 @@ class BookViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
 
 
-class LibraryCategoriesViewSet(viewsets.ViewSet):
+class LibraryCategoriesViewSet(viewsets.GenericViewSet):
     """List 5 categories (Bookshelves) each with up to 5 top books."""
+    queryset = Bookshelf.objects.all()
     def list(self, request):
         try:
             offset = int(request.GET.get('offset', '0'))
