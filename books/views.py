@@ -1,6 +1,8 @@
 from django.db.models import Q
 
 from rest_framework import exceptions as drf_exceptions, viewsets
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from .models import *
 from .serializers import *
@@ -99,3 +101,51 @@ class BookViewSet(viewsets.ModelViewSet):
             )
 
         return queryset.distinct()
+
+
+class LibraryCategoriesView(APIView):
+    """
+    Returns 5 categories (Bookshelves) and up to 5 top books for each.
+    Supports pagination over categories via `offset` query parameter.
+    """
+    def get(self, request):
+        try:
+            offset = int(request.GET.get('offset', '0'))
+        except ValueError:
+            offset = 0
+        if offset < 0:
+            offset = 0
+
+        categories_qs = Bookshelf.objects.order_by('name')
+        total_categories = categories_qs.count()
+        page_size = 5
+        categories = list(categories_qs[offset:offset + page_size])
+
+        # Base queryset constraints consistent with books list endpoint
+        base_books_qs = Book.objects.exclude(download_count__isnull=True).exclude(title__isnull=True)
+
+        results = []
+        for category in categories:
+            books_qs = (
+                base_books_qs
+                .filter(bookshelves=category)
+                .order_by('-download_count')[:5]
+            )
+            books_data = BookSerializer(books_qs, many=True).data
+            results.append({
+                'category': category.name,
+                'books': books_data,
+            })
+
+        next_url = None
+        next_offset = offset + page_size
+        if next_offset < total_categories:
+            # Preserve other query params while updating offset
+            query_params = request.GET.copy()
+            query_params['offset'] = str(next_offset)
+            next_url = request.build_absolute_uri(f'{request.path}?{query_params.urlencode()}')
+
+        return Response({
+            'results': results,
+            'next': next_url,
+        })
