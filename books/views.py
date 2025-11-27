@@ -105,9 +105,9 @@ class BookViewSet(viewsets.ModelViewSet):
 class LibraryCategoriesViewSet(viewsets.GenericViewSet):
     """List 5 categories (Bookshelves) each with up to 5 top books."""
     queryset = Bookshelf.objects.all()
-    def list(self, request):
+    def get_queryset(self):
         try:
-            offset = int(request.GET.get('offset', '0'))
+            offset = int(self.request.GET.get('offset', '0'))
         except ValueError:
             offset = 0
         if offset < 0:
@@ -138,9 +138,9 @@ class LibraryCategoriesViewSet(viewsets.GenericViewSet):
         next_offset = offset + page_size
         if next_offset < total_categories:
             # Preserve other query params while updating offset
-            query_params = request.GET.copy()
+            query_params = self.request.GET.copy()
             query_params['offset'] = str(next_offset)
-            next_url = request.build_absolute_uri(f'{request.path}?{query_params.urlencode()}')
+            next_url = self.request.build_absolute_uri(f'{self.request.path}?{query_params.urlencode()}')
 
         return Response({
             'results': results,
