@@ -125,6 +125,11 @@ class LibraryCategoriesViewSet(viewsets.GenericViewSet):
 
         results = []
         for category in categories:
+            category_total = (
+                base_books_qs
+                .filter(bookshelves=category)
+                .count()
+            )
             books_qs = (
                 base_books_qs
                 .filter(bookshelves=category)
@@ -133,6 +138,7 @@ class LibraryCategoriesViewSet(viewsets.GenericViewSet):
             books_data = BookSerializer(books_qs, many=True).data
             results.append({
                 'category': category.name,
+                'count': category_total,
                 'books': books_data,
             })
 
