@@ -140,15 +140,17 @@ class LibraryCategoriesViewSet(viewsets.GenericViewSet):
             base_url = f'{self.request.scheme}://{self.request.get_host()}'
             books_query = urlencode({
                 'topic': category.name,
+                'sort': 'popular',
+                'mime_type': 'application/epub+zip',
                 'page_size': 5,
                 'page': 2
             })
             next_books_url = f'{base_url}/books?{books_query}'
             results.append({
-                'category': category.name,
+                'name': category.name,
                 'count': category_total,
                 'books': books_data,
-                'next_books': next_books_url,
+                'next': next_books_url,
             })
 
         next_url = None
