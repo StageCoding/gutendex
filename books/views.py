@@ -2,6 +2,7 @@ from django.db.models import Q
 
 from rest_framework import exceptions as drf_exceptions, viewsets
 from rest_framework.response import Response
+from urllib.parse import urlencode
 
 from .models import *
 from .serializers import *
@@ -136,10 +137,18 @@ class LibraryCategoriesViewSet(viewsets.GenericViewSet):
                 .order_by('-download_count')[:5]
             )
             books_data = BookSerializer(books_qs, many=True).data
+            base_url = f'{self.request.scheme}://{self.request.get_host()}'
+            books_query = urlencode({
+                'topic': category.name,
+                'page_size': 5,
+                'page': 2
+            })
+            next_books_url = f'{base_url}/books?{books_query}'
             results.append({
                 'category': category.name,
                 'count': category_total,
                 'books': books_data,
+                'next_books': next_books_url,
             })
 
         next_url = None
