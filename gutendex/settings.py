@@ -188,7 +188,7 @@ CATALOG_TEMP_DIR = os.path.join(BASE_CATALOG_DIR, 'tmp')
 
 # Settings for Django REST Framework JSON API
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'books.pagination.StandardResultsSetPagination',
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     ),
@@ -201,3 +201,22 @@ REST_FRAMEWORK = {
 
 # Cross-origin resource sharing with `corsheaders` middleware
 CORS_ALLOW_ALL_ORIGINS = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}

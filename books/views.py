@@ -1,6 +1,8 @@
 from django.db.models import Q
 
 from rest_framework import exceptions as drf_exceptions, viewsets
+from rest_framework.response import Response
+from urllib.parse import urlencode
 
 from .models import *
 from .serializers import *
@@ -99,3 +101,67 @@ class BookViewSet(viewsets.ModelViewSet):
             )
 
         return queryset.distinct()
+
+
+class LibraryCategoriesViewSet(viewsets.GenericViewSet):
+    """List 5 categories (Bookshelves) each with up to 5 top books."""
+    queryset = Bookshelf.objects.all()
+    def get_queryset(self):
+        return Bookshelf.objects.all()
+    def list(self, request):
+        try:
+            offset = int(self.request.GET.get('offset', '0'))
+        except ValueError:
+            offset = 0
+        if offset < 0:
+            offset = 0
+
+        categories_qs = Bookshelf.objects.order_by('name')
+        total_categories = categories_qs.count()
+        page_size = 5
+        categories = list(categories_qs[offset:offset + page_size])
+
+        # Base queryset constraints consistent with books list endpoint
+        base_books_qs = Book.objects.exclude(download_count__isnull=True).exclude(title__isnull=True)
+
+        results = []
+        for category in categories:
+            category_total = (
+                base_books_qs
+                .filter(bookshelves=category)
+                .count()
+            )
+            books_qs = (
+                base_books_qs
+                .filter(bookshelves=category)
+                .order_by('-download_count')[:5]
+            )
+            books_data = BookSerializer(books_qs, many=True).data
+            base_url = f'{self.request.scheme}://{self.request.get_host()}'
+            books_query = urlencode({
+                'topic': category.name,
+                'sort': 'popular',
+                'mime_type': 'application/epub+zip',
+                'page_size': 5,
+                'page': 2
+            })
+            next_books_url = f'{base_url}/books?{books_query}'
+            results.append({
+                'name': category.name,
+                'count': category_total,
+                'books': books_data,
+                'next': next_books_url,
+            })
+
+        next_url = None
+        next_offset = offset + page_size
+        if next_offset < total_categories:
+            # Preserve other query params while updating offset
+            query_params = self.request.GET.copy()
+            query_params['offset'] = str(next_offset)
+            next_url = self.request.build_absolute_uri(f'{self.request.path}?{query_params.urlencode()}')
+
+        return Response({
+            'results': results,
+            'next': next_url,
+        })
